@@ -42,6 +42,13 @@ Look for logic that should move apart:
 - response assembly
 
 Name extracted methods after the responsibility, not after the syntax.
+Treat unclear naming as a refactor failure, not a style nit.
+
+Reject names such as:
+
+- `handle`, `process`, `common`, `helper`, `util`
+- `data`, `obj`, `result`, `tmp`
+- names that do not reveal stage or business meaning
 
 ## 4. Safe Extraction Heuristics
 
@@ -81,6 +88,7 @@ Do not change side-effect order or transactional behavior silently.
 - Does the entry method read as a clean workflow?
 - Are the four stages visible?
 - Are there comments marking major stages or explaining non-obvious business intent?
+- Are method and variable names explicit enough that the workflow can be understood without reading every implementation detail?
 - Are cleanup points still obvious, especially `finally`, `try-with-resources`, context restore, unlock, or shutdown paths?
 - Are cleanup operations correctly guarded so only successfully acquired or initialized resources are released?
 - Did any public signature change?
@@ -92,6 +100,7 @@ Do not change side-effect order or transactional behavior silently.
 - Re-read the changed entry method without looking at internals first. Does the flow still make sense line by line?
 - Did any extracted helper mix more than one stage without necessity?
 - Did the refactor leave enough comments for the next reader to understand stage boundaries and critical business decisions quickly?
+- Did any new method, context object, or variable get a vague name that hides responsibility or business meaning?
 - Did the refactor introduce vague abstractions, utility dumping, or premature reuse?
 - Did query order, write order, async logging, notifications, or transaction boundaries shift?
 - Did lock handling, cache mutation, TTL refresh, or auto-claim side effects shift in a way that changes state semantics?

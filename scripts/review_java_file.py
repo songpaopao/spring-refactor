@@ -9,7 +9,7 @@ import re
 import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Dict, Iterable, List, Sequence
+from typing import Dict, List, Sequence
 
 METHOD_PATTERN = re.compile(
     r"(?m)^[ \t]*(?:public|private|protected)\s+"
@@ -38,6 +38,32 @@ SIDE_EFFECT_PATTERNS = {
     "context": (r"AuthContextHolder\.setContext", r"AuthContextHolder\.getContext"),
     "logging": (r"\blog\.",),
     "resource_cleanup": (r"\bclose\s*\(", r"\bshutdown\s*\(", r"\bunlock\s*\(", r"setContext\s*\(\s*oldContext\s*\)"),
+}
+
+GENERIC_METHOD_NAMES = {
+    "handle",
+    "process",
+    "processdata",
+    "execute",
+    "run",
+    "deal",
+    "common",
+    "helper",
+    "util",
+    "dohandle",
+}
+
+GENERIC_LOCAL_NAMES = {
+    "data",
+    "obj",
+    "object",
+    "result",
+    "res",
+    "tmp",
+    "temp",
+    "list1",
+    "map1",
+    "info",
 }
 
 
@@ -141,18 +167,42 @@ def has_stage_comments(body: str) -> bool:
     return bool(re.search(r"//\s*[1-4]\.", body) or re.search(r"//.*(validate|build|execute|post|cleanup)", body, re.IGNORECASE))
 
 
+def collect_local_variable_names(body: str) -> List[str]:
+    names: List[str] = []
+    pattern = re.compile(r"(?m)^\s*(?:final\s+)?[\w<>\[\], ?]+\s+([A-Za-z_][A-Za-z0-9_]*)\s*=")
+    for match in pattern.finditer(body):
+        name = match.group(1)
+        if name not in KEYWORDS:
+            names.append(name)
+    return names
+
+
 def detect_risks(method: dict) -> List[str]:
     body = method["body"]
     risks: List[str] = []
     method_calls = collect_method_calls(body)
     stages = collect_stage_signals(method_calls)
     side_effect_categories = collect_side_effects(body)
+    local_names = collect_local_variable_names(body)
+    normalized_method_name = method["name"].lower()
 
     if method["end_line"] - method["start_line"] + 1 > 40 and not has_stage_comments(body):
         risks.append("large method without stage comments")
 
     if len(stages) >= 3:
         risks.append("mixed responsibilities across multiple workflow stages")
+
+    if len(stages) >= 3 and method["end_line"] - method["start_line"] + 1 > 5:
+        risks.append("method likely violates single responsibility across multiple workflow stages")
+
+    if normalized_method_name in GENERIC_METHOD_NAMES or (
+        any(token in normalized_method_name for token in ("handle", "process", "helper", "util"))
+        and not any(token in normalized_method_name for token in ("validate", "build", "execute", "after", "sync"))
+    ):
+        risks.append("method name is too generic to express a clear responsibility")
+
+    if any(name.lower() in GENERIC_LOCAL_NAMES for name in local_names):
+        risks.append("local variable names are too generic to express business meaning")
 
     if "tryLock(" in body and "unlock(" in body:
         guarded_cleanup = re.search(

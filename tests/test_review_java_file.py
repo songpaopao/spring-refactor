@@ -37,6 +37,15 @@ public class SampleService {
             lock.unlock();
         }
     }
+
+    public void processData() {
+        Object data = loadData();
+        Object result = convert(data);
+        validateRequest();
+        buildContext();
+        executeWorkflow();
+        logResult(result);
+    }
 }
 """
 
@@ -60,8 +69,20 @@ class ReviewJavaFileTest(unittest.TestCase):
 
             summary = summarize_file(path)
 
-            self.assertEqual(2, summary.method_count)
-            self.assertEqual(["safeMethod", "unsafeMethod"], [method.name for method in summary.methods])
+            self.assertEqual(3, summary.method_count)
+            self.assertEqual(["safeMethod", "unsafeMethod", "processData"], [method.name for method in summary.methods])
+
+    def test_detects_unclear_naming_and_mixed_responsibilities(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "SampleService.java"
+            path.write_text(SAMPLE_JAVA, encoding="utf-8")
+
+            summary = summarize_file(path, "processData")
+
+            self.assertEqual(1, summary.method_count)
+            self.assertIn("method name is too generic to express a clear responsibility", summary.methods[0].risks)
+            self.assertIn("local variable names are too generic to express business meaning", summary.methods[0].risks)
+            self.assertIn("method likely violates single responsibility across multiple workflow stages", summary.methods[0].risks)
 
 
 if __name__ == "__main__":

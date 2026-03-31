@@ -38,6 +38,8 @@ digraph refactor_flow {
 - Treat controller APIs, external DTOs, public service signatures, return structures, and observable exception semantics as stable by default.
 - If a good refactor requires changing external input or output, stop and declare that explicitly before making the change.
 - Keep entry methods focused on process orchestration, not low-level details.
+- Enforce clear naming as a hard rule. Method, class, context, and variable names must express responsibility and business meaning directly.
+- Enforce single responsibility as a hard rule. If a method or helper spans multiple workflow stages without a strong reason, keep refactoring.
 - Add comments deliberately. The refactored code must contain comments that explain stage boundaries, non-obvious business intent, or why a sequence matters.
 - Treat resource lifecycle as part of behavior. Lock release, thread-pool shutdown, stream or client close, and temporary context cleanup must remain explicit and verifiable after refactoring.
 - Release a resource only when acquisition or initialization is known to have succeeded. Do not keep or introduce unconditional cleanup that can run on an unacquired lock, unopened resource, or uninitialized executor.
@@ -99,6 +101,12 @@ Look for responsibilities that should not live in the same method or class:
 
 If a responsibility has its own vocabulary and rules, give it a named method or a small collaborator.
 
+Clear names are part of the design, not polish:
+
+- prefer `validateTaskRequest`, `buildTaskContext`, `executeRewardClaim`, `afterTaskClaim`
+- reject `handle`, `process`, `common`, `helper`, `util`
+- reject local names like `data`, `obj`, `result`, `tmp` when a business name is available
+
 ### 3. Remove real duplication
 
 Only extract shared helpers when duplication is stable across multiple call sites. Do not create common abstractions just because two code blocks look similar once.
@@ -119,6 +127,7 @@ Do not change transaction timing or side-effect order just to make the code look
 - Run `scripts/review_java_file.py` first on large files to compress method structure, side effects, and obvious cleanup risks before deeper analysis.
 - Run `scripts/review_git_diff.py` first on large Java diffs to identify contract drift, cleanup regressions, and high-risk changes before manual review.
 - Extract `validateXxx`, `buildXxx`, `executeXxx`, `afterXxx`, `toXxxResponse` style methods when they reflect real stages.
+- Rename ambiguous methods and variables as part of the refactor. Do not keep vague names just to minimize diff size.
 - Add a short comment before each major stage in an entry method when the workflow is not obvious at a glance.
 - Add comments for business rules, transaction-sensitive ordering, and side effects that would be easy to misunderstand from code alone.
 - Introduce a transition context object for stateful workflows that pass lock state, cache state, counters, or filtered task sets through multiple steps.
@@ -239,11 +248,12 @@ Review in this order:
 1. Re-read the entry method top-down and confirm it now reads as workflow orchestration.
 2. Check that each extracted method belongs to one stage: validation, parameter construction, business processing, or post-processing.
 3. Confirm no extracted helper still mixes query, write, response assembly, and async side effects without a good reason.
-4. Review the diff for contract drift: public signatures, DTO fields, return shape, exception behavior, transaction timing, and side-effect order.
-5. Review lock handling, state transition ordering, cache invalidation, and expiration updates for hidden behavior drift.
-6. Review resource cleanup paths: lock release, thread-pool shutdown, context restore, stream close, and client cleanup must still happen on success and failure paths.
-7. Confirm cleanup is conditional where necessary: no unconditional `unlock`, `close`, or `shutdown` on resources that may not have been acquired.
-8. Reject vague abstractions added only for reuse appearance, especially utility classes or helpers with weak names.
+4. Confirm method and variable names now make responsibility obvious without reading internals line by line.
+5. Review the diff for contract drift: public signatures, DTO fields, return shape, exception behavior, transaction timing, and side-effect order.
+6. Review lock handling, state transition ordering, cache invalidation, and expiration updates for hidden behavior drift.
+7. Review resource cleanup paths: lock release, thread-pool shutdown, context restore, stream close, and client cleanup must still happen on success and failure paths.
+8. Confirm cleanup is conditional where necessary: no unconditional `unlock`, `close`, or `shutdown` on resources that may not have been acquired.
+9. Reject vague abstractions added only for reuse appearance, especially utility classes or helpers with weak names.
 
 If the review finds a mixed-stage helper or hidden behavior change, refactor again before claiming the work is done.
 
@@ -260,6 +270,7 @@ Stop and surface the issue before editing when any of these are true:
 ## Common Mistakes
 
 - Hiding a messy method inside one new helper instead of splitting the workflow stages.
+- Keeping a vague name after refactoring, such as `handle`, `process`, `data`, or `result`, when the code now has a clear responsibility.
 - Extracting shared utilities too early and creating vague `CommonUtil` style code.
 - Mixing response assembly back into business processing after the method was split.
 - Leaving the refactored flow without comments, forcing readers to reverse-engineer stage intent from implementation details.

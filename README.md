@@ -8,6 +8,7 @@ It is designed for large methods, mixed responsibilities, stateful service flows
 
 - Split oversized methods into clear staged flows
 - Clarify service responsibilities without changing external behavior by default
+- Enforce clear naming and single responsibility as hard constraints
 - Enforce comments for stage boundaries and non-obvious business intent
 - Add post-refactor review as a required step
 - Verify safe cleanup of locks, executors, streams, clients, and context state
@@ -51,6 +52,7 @@ python3 scripts/review_git_diff.py --repo /path/to/repo
 
 - Preserve external request and response contracts unless a change is declared first
 - Keep entry methods readable as staged process orchestration
+- Treat clear naming and single responsibility as non-negotiable refactor outcomes
 - Prefer small, local, reversible refactors over broad rewrites
 - Require comments for major stages, ordering constraints, and side effects
 - Treat review and resource cleanup verification as part of the refactor itself
