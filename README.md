@@ -24,7 +24,13 @@ It is designed for large methods, mixed responsibilities, stateful service flows
 
 ## Installation
 
-Copy this repository into your Codex skills directory as `spring-refactor`:
+Install directly into your Codex skills directory:
+
+```bash
+git clone https://gitcode.com/songpaopao/spring-refactor.git "${CODEX_HOME:-$HOME/.codex}/skills/spring-refactor"
+```
+
+If you already cloned the repository elsewhere, copy it into the same location:
 
 ```bash
 cp -R spring-refactor "${CODEX_HOME:-$HOME/.codex}/skills/spring-refactor"
