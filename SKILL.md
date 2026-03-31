@@ -9,6 +9,10 @@ description: Use when refactoring Java or Spring backend files with oversized me
 
 Refactor Java/Spring backend code conservatively. Keep external behavior stable, make entry methods read like clean process orchestration, and move detail work into smaller units with clear responsibilities.
 
+Before reading a large Java file in full, run `scripts/review_java_file.py <file> [--method name]` to generate a compact structural summary. Use that artifact first, then return to the source file only for the lines that actually need judgment.
+
+Before reviewing a wide Java diff, run `scripts/review_git_diff.py --repo <repo>` to compress changed files into a smaller review artifact and focus follow-up reading on the risky hunks.
+
 ## Workflow Decision
 
 ```dot
@@ -112,6 +116,8 @@ Do not change transaction timing or side-effect order just to make the code look
 
 ## Practical Moves
 
+- Run `scripts/review_java_file.py` first on large files to compress method structure, side effects, and obvious cleanup risks before deeper analysis.
+- Run `scripts/review_git_diff.py` first on large Java diffs to identify contract drift, cleanup regressions, and high-risk changes before manual review.
 - Extract `validateXxx`, `buildXxx`, `executeXxx`, `afterXxx`, `toXxxResponse` style methods when they reflect real stages.
 - Add a short comment before each major stage in an entry method when the workflow is not obvious at a glance.
 - Add comments for business rules, transaction-sensitive ordering, and side effects that would be easy to misunderstand from code alone.
