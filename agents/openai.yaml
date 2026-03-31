@@ -1,0 +1,4 @@
+interface:
+  display_name: "Spring Refactor"
+  short_description: "Refactor large Spring service methods safely"
+  default_prompt: "Use $spring-refactor to refactor this Java/Spring backend file while preserving external behavior."
